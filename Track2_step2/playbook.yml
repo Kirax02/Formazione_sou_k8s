@@ -1,0 +1,99 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+
+    - name: Download Docker repository
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker
+      package:
+        name: docker-ce
+        state: present
+
+    - name: Start Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Install Python requests
+      package:
+        name: python3-requests
+        state: present
+
+    - name: Create a network with custom IPAM config
+      docker_network:
+        name: Mario_network
+        ipam_config:
+          - subnet: 192.168.10.0/24
+            gateway: 192.168.10.1
+
+    - name: Pull Docker image for Jenkins Master
+      docker_image:
+        name: jenkins/jenkins:lts
+        source: pull
+
+    - name: Create Jenkins container Master
+      docker_container:
+        name: jenkins_master
+        image: jenkins/jenkins:lts
+        networks:
+          - name: Mario_network
+            ipv4_address: 192.168.10.2
+        ports:
+          - "8080:8080"
+          - "50000:50000"
+        state: started
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - /usr/bin/docker:/usr/bin/docker
+
+    - name: Add group docker in jenkins_master container
+      command: docker exec --user root jenkins_master groupadd -g 989 docker
+
+    - name: Add jenkins user to docker group
+      command: docker exec --user root jenkins_master usermod -aG docker jenkins
+
+    - name: Pull Docker image for Jenkins Slave
+      docker_image:
+        name: jenkins/inbound-agent
+        source: pull
+
+    - name: Create Jenkins container Slave
+      docker_container:
+        name: jenkins_slave
+        image: jenkins/inbound-agent
+        networks:
+          - name: Mario_network
+            ipv4_address: 192.168.10.3
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - /usr/bin/docker:/usr/bin/docker
+        env:
+          JENKINS_URL: "http://192.168.10.2:8080/"
+          JENKINS_AGENT_NAME: "jenkins_slave"
+          JENKINS_AGENT_WORKDIR: "/home/jenkins"
+          JENKINS_SECRET: "token_segreto"
+        state: started
+
+    - name: Download agent.jar in Jenkins Slave
+      command: >
+        docker exec jenkins_slave curl -O http://192.168.10.2:8080/jnlpJars/agent.jar
+
+    - name: Start Jenkins Slave and connect to Master
+      command: >
+        docker exec -d jenkins_slave java -jar agent.jar
+        -url http://192.168.10.2:8080/
+        -secret token_segreto
+        -name "jenkins_slave"
+        -webSocket
+        -workDir "/home/jenkins"  
+    
+    - name: Add group docker in jenkins_slave container
+      command: docker exec --user root jenkins_slave groupadd -g 989 docker
+    
+    - name: Add jenkins user to docker group
+      command: docker exec --user root jenkins_slave usermod -aG docker jenkins
