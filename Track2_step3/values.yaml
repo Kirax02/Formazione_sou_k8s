@@ -1,0 +1,52 @@
+replicaCount: 1
+
+image:
+  repository: kira002/flask-app-example
+  tag: "develop"
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: cluster-reader
+  annotations: {}
+  clusterRoleBinding:
+    create: true
+    roleName: cluster-reader
+    roleNamespace: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true 
+  annotations: {} 
+  hosts:
+    - host: flask-app.com 
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: [] 
+    
+resources:
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+  requests:
+    cpu: "250m"
+    memory: "128Mi"
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8000
+  initialDelaySeconds: 3
+  periodSeconds: 5
