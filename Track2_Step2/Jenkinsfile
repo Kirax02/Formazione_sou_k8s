@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+    environment {
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git url: 'https://github.com/kirax02/Formazione_sou_k8s'
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    def branch = env.GIT_BRANCH ?: 'unknown'
+                    def tag = branch.contains('main') ? 'latest' : (branch.contains('develop') ? 'develop' : 'other')
+
+                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
+                        def image = docker.build("kira002/flask-app-example:${tag}")
+                        image.push()
+                    }
+                    sh "docker rmi --force kira002/flask-app-example:${tag}"
+                }
+            }
+        }
+    }
+}
