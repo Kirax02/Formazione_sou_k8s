@@ -1,0 +1,22 @@
+pipeline {
+    agent any
+    environment {
+        KUBECONFIG = "/var/jenkins_home/.kube/config"
+    }
+    stages {
+        stage('Clone Chart Repository') {
+            steps {
+                git url: 'https://github.com/kirax02/Formazione_sou_k8s'
+            }
+        }
+        stage('Helm Install') {
+            steps {
+                sh '''
+                helm upgrade --install flask-app ./Track2_Step3/charts \
+                  --namespace formazione-sou \
+                  --set image.tag=latest
+                '''
+            }
+        }
+    }
+}
