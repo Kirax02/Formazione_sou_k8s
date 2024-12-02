@@ -13,14 +13,14 @@ pipeline {
 
         stage('Build and Push Docker Image') {
             steps {
-                dir('formazione_sou_k8s/Track2_Step2'){
+                dir('formazione_sou_k8s/Track2_Step2') {
                     script {
-                    def branch = env.GIT_BRANCH ?: 'unknown'
-                    def tag = branch.contains('main') ? 'latest' : (branch.contains('develop') ? 'develop' : 'other')
+                        def branch = env.GIT_BRANCH ?: 'unknown'
+                        def tag = branch.contains('main') ? 'latest' : (branch.contains('develop') ? 'develop' : 'other')
 
-                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
-                        def image = docker.build("kira002/flask-app-example:${tag}")
-                        image.push()
+                        docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
+                            def image = docker.build("kira002/flask-app-example:${tag}")
+                            image.push()
                     }
                     sh "docker rmi --force kira002/flask-app-example:${tag}"
                     }
