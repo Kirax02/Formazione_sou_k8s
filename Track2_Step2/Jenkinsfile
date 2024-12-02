@@ -13,7 +13,8 @@ pipeline {
 
         stage('Build and Push Docker Image') {
             steps {
-                script {
+                dir('formazione_sou_k8s/Track2_Step2'){
+                    script {
                     def branch = env.GIT_BRANCH ?: 'unknown'
                     def tag = branch.contains('main') ? 'latest' : (branch.contains('develop') ? 'develop' : 'other')
 
@@ -22,6 +23,7 @@ pipeline {
                         image.push()
                     }
                     sh "docker rmi --force kira002/flask-app-example:${tag}"
+                    }
                 }
             }
         }
