@@ -4,12 +4,12 @@ pipeline {
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
     }
 
-    stages {
-        stage('Clone Repository') {
-            steps {
-                git url: 'https://github.com/kirax02/Formazione_sou_k8s'
-            }
-        }
+	stages {
+		stage('Clone repository') {
+			steps {
+				checkout scm
+			}
+		}
 
         stage('Build and Push Docker Image') {
             steps {
